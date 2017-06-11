@@ -1,6 +1,8 @@
 package hello;
 
 import domain.User;
+import domain.Vote;
+import domain.VoteItem;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -16,15 +18,13 @@ import org.springframework.web.multipart.MultipartHttpServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Controller
 public class FileController {
     private static final Logger logger = LoggerFactory.getLogger(FileController.class);
     @Value("${imgPath.Prefix}")
-    private String filepath1;
+    private String filepath;
 
     public static Map<String, Object> resultJson(int resultCode, String messageValue, Object objectValue) {
         Map map = new HashMap();
@@ -44,14 +44,17 @@ public class FileController {
     @RequestMapping(value = "upload")
     @ResponseBody
     public Map upload(@RequestParam("test") MultipartFile file, User user) {
-        System.out.println("类======" + user);
 
-            user.setImgPath(filepath1);
+
+
 
 
         if (file.isEmpty()) {
             return resultJson(102, "文件为空", user);
         }
+
+
+
         // 获取文件名
         String fileName = file.getOriginalFilename();
         logger.info("上传的文件名为：" + fileName);
@@ -59,10 +62,10 @@ public class FileController {
         String suffixName = fileName.substring(fileName.lastIndexOf("."));
         logger.info("上传的后缀名为：" + suffixName);
         // 文件上传后的路径
-        String filePath = "/Users/admin/Desktop/a/";
+
         // 解决中文问题，liunx下中文路径，图片显示问题
-        // fileName = UUID.randomUUID() + suffixName;
-        File dest = new File(filePath + fileName);
+        fileName = UUID.randomUUID() + suffixName;
+        File dest = new File(filepath + fileName);
         // 检测是否存在目录
         if (!dest.getParentFile().exists()) {
             dest.getParentFile().mkdirs();
@@ -78,6 +81,7 @@ public class FileController {
         try {
 //          User user= userService.save(user);
             user.setId(1L);
+            user.setImgPath(fileName);
         } catch (Exception e) {
             return resultJson(103, "图片上传成功，数据库连接异常", user);
         }
@@ -169,7 +173,8 @@ public class FileController {
     //多文件上传方法二
     @RequestMapping(value = "/batchupload", method = RequestMethod.POST)
     @ResponseBody
-    public String batchFileUp(HttpServletRequest request) {
+    public Map batchFileUp(HttpServletRequest request, Vote vote) {
+        String ss="";
         List<MultipartFile> files = ((MultipartHttpServletRequest) request).getFiles("file");
         //String contextPath = request.getSession().getServletContext().getRealPath("/")+ "\\uploadsTest";//可以将文件存放在这个目录下  是当前工程下的uploadtest目录下
 //        System.out.println(contextPath);
@@ -178,26 +183,61 @@ public class FileController {
 //        {
 //            tempFile.mkdir();
 //        }
+
+
+
+
+
+        String options=  vote.getOptions();
+
+        String[] item=null;
         for (int i = 0; i < files.size(); i++) {
+
             MultipartFile file = files.get(i);
-            System.out.println(file.getContentType());
             String fileName = file.getOriginalFilename();
+            System.out.println("文件名 fileName:"+fileName);
+
+
             String suffixName = fileName.substring(fileName.lastIndexOf("."));
-            String fullfilePath = "E://test//" + fileName;//自己设定的文件目录
-            logger.info("fullfilePath:", fullfilePath);
+            System.out.println("文件后缀 suffixName："+suffixName);
+            fileName = UUID.randomUUID() + suffixName;
+            if (i==0) {
+                vote.setPostImgPath(fileName);
+                item=options.split(";");
+            }else {
+
+                System.out.println("item===="+item[i-1]);
+                item[i-1]= item[i-1]+","+fileName;
+                ss=ss+item[i-1]+";";
+            }
+
+
+
+
+
+
+            String fullfilePath = filepath + fileName;//自己设定的文件目录
+
+            System.out.println("自己设定的文件目录 fullfilePath:"+ fullfilePath);
+
+
+
             if (!file.isEmpty()) {
                 try {
                     BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(new File(fullfilePath)));
                     stream.write(file.getBytes());
                     stream.close();
                 } catch (Exception e) {
-                    return "Failed to Upload" + fileName + "=>" + e.getMessage();
+                   return resultJson(101,"图片上传失败",vote);
                 }
             } else {
-                return "Failed to Upload " + fileName + "because the file was empty";
+             return resultJson(102,"图片缺失",vote);
             }
 
         }
-        return "Upload Success!";
+        System.out.println("输出海报图片："+vote);
+        vote.setOptions(ss);
+        System.out.println("输出最终的拼接的字符串："+ss);
+        return resultJson(100,"图片上传成功",vote);
     }
 }
