@@ -237,6 +237,11 @@ public class FileController {
         System.out.println("输出海报图片："+vote);
         vote.setOptions(ss);
         System.out.println("输出最终的拼接的字符串："+ss);
+
+
+
+
+        //如果vote数据库保存成功则。。。。
         return resultJson(100,"图片上传成功",vote);
     }
 }
