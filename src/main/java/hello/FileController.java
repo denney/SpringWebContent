@@ -2,7 +2,6 @@ package hello;
 
 import domain.User;
 import domain.Vote;
-import domain.VoteItem;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
